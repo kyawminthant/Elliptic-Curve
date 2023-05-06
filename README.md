@@ -1,9 +1,1 @@
-# Elliptic-Curve
-The Elliptic Curve algorithm is a type of public-key encryption algorithm that is based on the mathematics of elliptic curves. It is used to generate public and private keys that can be used for secure communication.
-In the Elliptic Curve algorithm, a pair of parameters (a, b) define an elliptic curve. The curve consists of all points (x, y) that satisfy the equation y^2 = x^3 + ax + b. A base point G on the curve is chosen, and this point is used to generate a public key.
-To generate a public key, the sender chooses a random integer k, and computes the point P = kG. Point P is the sender's public key, which can be shared with others.
-To generate a private key, the sender chooses a random integer d, and computes the point Q = dG. Point Q is the sender's private key, which must be kept secret.
-To encrypt a message, the sender first generates a shared secret by computing S = dP. The shared secret S is used as the key for a symmetric encryption algorithm, such as AES. The sender then encrypts the message using the symmetric key and sends the encrypted message and the public key P to the recipient.
-To decrypt the message, the recipient computes S = kQ, which is the same as S = kdG. The recipient can then use the shared secret S as the key to decrypt the message.
-The security of the Elliptic Curve algorithm is based on the difficulty of computing the private key d from the public key P. This is known as the Elliptic Curve Discrete Logarithm Problem, which is believed to be difficult to solve for large enough prime numbers.
-In R, the Elliptic Curve algorithm can be implemented using the gmp package to handle large integers, which are required for the calculations in the algorithm. The implementation involves defining a Point class to represent points on the elliptic curve, and implementing functions for point addition, point multiplication, and key generation. The implementation can be used to generate public and private keys, encrypt, and decrypt messages, and verify the authenticity of messages using digital signatures.
+
