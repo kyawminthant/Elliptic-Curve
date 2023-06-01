@@ -1,51 +1,58 @@
-# Define the elliptic curve parameters
-a <- -1
-b <- 1
-p <- 23
+# Define a class for the elliptic curve
+EllipticCurve <- function(a, b, p) {
+  list(a = a, b = b, p = p)
+}
 
-# Define the point addition function
-point_addition <- function(p1, p2) {
+# Check if a point is on the curve
+isOnCurve <- function(x, y, curve) {
+  left <- y^2 %% curve$p
+  right <- (x^3 + curve$a * x + curve$b) %% curve$p
+  return(left == right)
+}
+
+# Add two points on the curve
+pointAddition <- function(p1, p2, curve) {
   x1 <- p1[1]
   y1 <- p1[2]
   x2 <- p2[1]
   y2 <- p2[2]
   
   if (x1 == x2 && y1 == y2) { # Point doubling
-    lambda <- ((3*x1^2 + a) * inverse_mod(2*y1, p)) %% p
+    lambda <- (3 * x1^2 + curve$a) * inverse_mod(2 * y1, curve$p) %% curve$p
   } else { # Point addition
-    lambda <- ((y2 - y1) * inverse_mod(x2 - x1, p)) %% p
+    lambda <- (y2 - y1) * inverse_mod(x2 - x1, curve$p) %% curve$p
   }
   
-  x3 <- (lambda^2 - x1 - x2) %% p
-  y3 <- (lambda*(x1 - x3) - y1) %% p
+  x3 <- (lambda^2 - x1 - x2) %% curve$p
+  y3 <- (lambda * (x1 - x3) - y1) %% curve$p
   
   return(c(x3, y3))
 }
 
-# Define the scalar multiplication function
-scalar_multiplication <- function(p, k) {
+# Multiply a point on the curve by a scalar
+scalarMultiplication <- function(p, k, curve) {
   result <- c(0, 0)
   
   while (k > 0) {
-    if (bitwAnd(k, 1) == 1) {
-      result <- point_addition(result, p)
+    if (k %% 2 == 1) {
+      result <- pointAddition(result, p, curve)
     }
-    p <- point_addition(p, p)
-    k <- bitShiftR(k, 1)
+    p <- pointAddition(p, p, curve)
+    k <- k %/% 2
   }
   
   return(result)
 }
 
-# Define the inverse modulo function
-inverse_mod <- function(a, m) {
+# Find the modular inverse of a number
+inverse_mod <- function(a, n) {
   t <- 0
   newt <- 1
-  r <- m
+  r <- n
   newr <- a
   
   while (newr != 0) {
-    quotient <- floor(r / newr)
+    quotient <- r %/% newr
     t <- newt
     newt <- t - quotient * newt
     r <- newr
@@ -57,25 +64,59 @@ inverse_mod <- function(a, m) {
   }
   
   if (t < 0) {
-    t <- t + m
+    t <- t + n
   }
   
   return(t)
 }
 
-# Test the functions with an example
-x1 <- 5
-y1 <- 1
-x2 <- 5
-y2 <- 16
-p1 <- c(x1, y1)
-p2 <- c(x2, y2)
+# Encryption function
+encrypt <- function(publicKey, plaintext, curve) {
+  # Generate a random secret key
+  secretKey <- sample(1:(curve$p - 1), 1)
+  
+  # Compute the shared secret point
+  sharedPoint <- scalarMultiplication(publicKey, secretKey, curve)
+  
+  # Encode the plaintext
+  encodedPlaintext <- utf8ToInt(plaintext)
+  
+  # Encrypt each character using the x-coordinate of the shared secret point
+  encryptedChars <- sapply(encodedPlaintext, function(char) {
+    point <- scalarMultiplication(sharedPoint, char, curve)
+    return(point[1])
+  })
+  
+  return(encryptedChars)
+}
 
-# Point addition
-result <- point_addition(p1, p2)
-cat("Point addition result:", result[1], result[2], "\n")
+# Decryption function
+decrypt <- function(privateKey, ciphertext, curve) {
+  # Compute the shared secret point
+  sharedPoint <- scalarMultiplication(privateKey, curve$p - 1, curve)
+  
+  # Decrypt each character using the x-coordinate of the shared secret point
+  decryptedChars <- sapply(ciphertext, function(char) {
+    point <- scalarMultiplication(sharedPoint, char, curve)
+    return(as.integer(point[1]))
+  })
+  
+  # Decode the decrypted characters
+  decryptedPlaintext <- intToUtf8(decryptedChars)
+  
+  return(decryptedPlaintext)
+}
 
-# Scalar multiplication
-k <- 3
-result <- scalar_multiplication(p1, k)
-cat("Scalar multiplication result:", result[1], result[2], "\n")
+# Example usage
+curve <- EllipticCurve(2, 2, 17)
+privateKey <- 5
+publicKey <- scalarMultiplication(curve$G, privateKey, curve)
+plaintext <- "Hello, world!"
+
+# Encryption
+encrypted <- encrypt(publicKey, plaintext, curve)
+cat("Encrypted ciphertext:", encrypted, "\n")
+
+# Decryption
+decrypted <- decrypt(privateKey, encrypted, curve)
+cat("Decrypted plaintext:", decrypted, "\n")
